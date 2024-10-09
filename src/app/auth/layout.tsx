@@ -1,4 +1,4 @@
-import CenteredLayout from "../layout/centered/centered-layout";
+import CenteredLayout from "../../layout/centered/centered-layout";
 
 type Props = {
   children: React.ReactNode;

@@ -43,8 +43,10 @@ const SignInCard = () => {
     setIsLoading(true);
     setError(null);
     try {
-      await signInWithPassword(data);
-      router.push(paths.dashboard.root);
+      const success = await signInWithPassword(data);
+      if (success) {
+        router.push(paths.dashboard.root);
+      }
       // Handle successful sign-in (e.g., redirect to dashboard)
     } catch (err) {
       setError("Invalid email or password. Please try again.");

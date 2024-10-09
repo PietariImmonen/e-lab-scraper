@@ -70,10 +70,10 @@ export const createUserInFirestore = async (
 export const signInWithPassword = async ({
   email,
   password,
-}: SignInParams): Promise<void> => {
+}: SignInParams): Promise<boolean> => {
   try {
     await _signInWithEmailAndPassword(auth, email, password);
-
+    return true;
     // const user = AUTH.currentUser;
   } catch (error) {
     console.error("Error during sign in with password:", error);
