@@ -27,14 +27,13 @@ export function AuthProvider({ children }: Props) {
     user: null,
     loading: true,
   });
-  const checkUserSession = useCallback(async () => {
-    try {
-      onAuthStateChanged(auth, async (user) => {
+  const checkUserSession = useCallback(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (user: AuthState["user"]) => {
         if (user) {
           const userProfile = doc(firestore, "users", user.uid);
-
           const docSnap = await getDoc(userProfile);
-
           const profileData = docSnap.data();
 
           setState({
@@ -47,37 +46,16 @@ export function AuthProvider({ children }: Props) {
             loading: false,
           });
         }
-      });
-    } catch (error) {
-      console.error(error);
+      },
+    );
 
-      setState({
-        user: null,
-        loading: false,
-      });
-    }
+    return unsubscribe;
   }, [setState]);
 
   useEffect(() => {
-    checkUserSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ----------------------------------------------------------------------
-
-  // Subscribe to Firestore using onSnapshot and update the user state in the context
-  useEffect(() => {
-    if (!state.user?.uid) {
-      console.warn("Invalid userId: userId must be a non-empty string");
-      // Return an empty function when userId is invalid
-      return () => {};
-    }
-
-    // Cleanup listener when component unmounts
-
-    // the exhaustive deps on state.user is done here !
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.user?.uid, setState]);
+    const unsubscribe = checkUserSession();
+    return () => unsubscribe();
+  }, [checkUserSession]);
 
   // ----------------------------------------------------------------------
 
@@ -104,9 +82,19 @@ export function AuthProvider({ children }: Props) {
     }),
     [checkUserSession, state.user, status],
   );
-
   return (
-    <AuthContext.Provider value={memoizedValue}>
+    <AuthContext.Provider
+      value={{
+        ...memoizedValue,
+        checkUserSession: async () => {
+          const unsubscribe = checkUserSession();
+          await new Promise<void>((resolve) => {
+            unsubscribe();
+            resolve();
+          });
+        },
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

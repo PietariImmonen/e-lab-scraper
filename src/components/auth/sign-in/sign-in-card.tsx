@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { signInWithPassword } from "@/auth/firebase/actions";
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/hooks/use-auth-context";
 
 const validationSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,6 +32,8 @@ const SignInCard = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { checkUserSession, user } = useAuthContext();
+
   const {
     register,
     handleSubmit,
@@ -39,23 +42,26 @@ const SignInCard = () => {
     resolver: zodResolver(validationSchema),
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = handleSubmit(async (data) => {
     setIsLoading(true);
-    setError(null);
     try {
-      const success = await signInWithPassword(data);
-      if (success) {
-        router.push(paths.dashboard.root);
-      }
-      // Handle successful sign-in (e.g., redirect to dashboard)
-    } catch (err) {
-      setError("Invalid email or password. Please try again.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      await signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      await checkUserSession?.();
+    } catch (error) {
+      console.error(error);
+      setError(error instanceof Error ? error.message : "Unknown error");
     }
-  };
+    setIsLoading(false);
+  });
 
+  useEffect(() => {
+    if (user) {
+      router.push(paths.dashboard.root);
+    }
+  }, [user, router]);
   return (
     <Card className="w-[350px]">
       <CardHeader>
@@ -65,7 +71,7 @@ const SignInCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={onSubmit}>
           <div className="grid w-full items-center gap-4">
             <div className="flex flex-col space-y-1.5">
               <Input

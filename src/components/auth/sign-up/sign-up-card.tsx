@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { signUp } from "@/auth/firebase/actions";
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/hooks/use-auth-context";
 
 const validationSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -35,6 +36,7 @@ type FormData = z.infer<typeof validationSchema>;
 const SignUpCard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { checkUserSession, user } = useAuthContext();
   const router = useRouter();
   const {
     register,
@@ -50,6 +52,7 @@ const SignUpCard: React.FC = () => {
     try {
       await signUp(data);
       router.push(paths.dashboard.root);
+      await checkUserSession?.();
       // Handle successful sign-up (e.g., redirect to dashboard)
     } catch (err) {
       setError("An error occurred during sign-up. Please try again.");
@@ -58,6 +61,12 @@ const SignUpCard: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      router.push(paths.dashboard.root);
+    }
+  }, [user, router]);
 
   return (
     <Card className="w-[350px]">
