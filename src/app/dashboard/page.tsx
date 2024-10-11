@@ -1,26 +1,36 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useAuthContext } from "@/hooks/use-auth-context";
+import SearchResults from "@/sections/search-result-table/search-result-table";
+import SearchSection from "@/sections/search/search-section";
+import { useSearchResultStore } from "@/stores/search-result-store";
+import { useEffect } from "react";
 
 const Page = () => {
-  const [loading, setLoading] = useState(false);
-  const testScrape = async () => {
-    setLoading(true);
-    const response = await fetch("/api/scrape", {
-      method: "POST",
-      body: JSON.stringify({ searchWord: "AI in the customer service" }),
-    });
-    const data = await response.json();
+  const { user } = useAuthContext();
+  const {
+    searchResults,
+    isLoading,
 
-    console.log(data);
-    setLoading(false);
-  };
+    subscribeToSearchResults,
+  } = useSearchResultStore();
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToSearchResults(user.id);
+      return () => unsubscribe();
+    }
+    return () => {};
+  }, [subscribeToSearchResults, user]);
+
   return (
-    <div>
-      <p>Dashboard</p>
-      <Button onClick={testScrape}>Test Scrape</Button>
-      {loading && <p>Loading...</p>}
+    <div className="flex flex-col gap-4">
+      <SearchSection />
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <SearchResults results={searchResults} />
+      )}
     </div>
   );
 };

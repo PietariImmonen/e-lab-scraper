@@ -13,7 +13,8 @@ const GOOGLE_API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
 const SEARCH_ENGINE_ID = process.env.SEARCH_ENGINE_ID;
 
 async function getSearchResults(query: string, numResults = 1) {
-  const url = `https://www.googleapis.com/customsearch/v1?q=${query}&key=${GOOGLE_API_KEY}&cx=${SEARCH_ENGINE_ID}&num=${numResults}`;
+  const prompt = ` ${query}`;
+  const url = `https://www.googleapis.com/customsearch/v1?q=${prompt}&key=${GOOGLE_API_KEY}&cx=${SEARCH_ENGINE_ID}&num=${numResults}`;
 
   try {
     const response = await axios.get(url);
@@ -42,7 +43,8 @@ async function scrapeWebsite(url: string): Promise<string> {
 }
 
 async function summarizeText(text: string): Promise<string> {
-  const prompt = `Summarize the following text in a concise manner, highlighting the key points:
+  console.log(text);
+  const prompt = `Summarize the key points from the text below in a clear and succinct manner using Markdown syntax:
 
 ${text}
 
@@ -52,7 +54,7 @@ Summary:`;
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 150,
+      max_tokens: 1000,
     });
     console.log(response);
     return response.choices[0].message.content || "No summary generated.";
@@ -77,9 +79,9 @@ export async function POST(request: Request) {
 
     for (const url of urls) {
       const text = await scrapeWebsite(url);
-      console.log(`Content from ${url}:`, text.substring(0, 500)); // Display first 500 characters for brevity
+
       const summary = await summarizeText(text);
-      console.log(`Summary from ${url}:`, summary);
+
       scrapedContent.push({ url, text, summary });
     }
 
